@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -29,10 +29,16 @@ import Animated, {
   interpolate,
   withSequence,
   Easing,
-  FadeIn
+  FadeIn,
+  FadeOut,
+  Layout,
+  SlideInRight,
+  SlideOutLeft
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -71,10 +77,12 @@ export default function SleepCycleCalculator() {
   const [calculatorMode, setCalculatorMode] = useState<'bedtime' | 'wakeup'>('bedtime');
   const [selectedHour, setSelectedHour] = useState(10);
   const [selectedMinute, setSelectedMinute] = useState(30);
-  const [selectedPeriod, setSelectedPeriod] = useState<'PM' | 'AM'>('PM');
+  const [selectedPeriod, setSelectedPeriod] = useState<number>(6);
   const [calculatedTimes, setCalculatedTimes] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedTime, setSelectedTime] = useState(new Date());
 
   // Enhanced animations
   const sparkleAnim = useSharedValue(0);
@@ -82,6 +90,8 @@ export default function SleepCycleCalculator() {
   const fadeAnim = useSharedValue(0);
   const starsAnim = useSharedValue(0);
   const buttonPressAnim = useSharedValue(0);
+
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     // Load last used time
@@ -160,10 +170,66 @@ export default function SleepCycleCalculator() {
     transform: [{ scale: interpolate(buttonPressAnim.value, [0, 1], [1, 0.95]) }],
   }));
 
-  const fadeStyle = useAnimatedStyle(() => ({
-    opacity: fadeAnim.value,
-    transform: [{ translateY: interpolate(fadeAnim.value, [0, 1], [20, 0]) }],
-  }));
+  const fadeStyle = useAnimatedStyle(() => {
+    return {
+      opacity: fadeAnim.value,
+      transform: [
+        {
+          scale: interpolate(
+            fadeAnim.value,
+            [0, 1],
+            [0.95, 1]
+          ),
+        },
+      ],
+    };
+  });
+
+  // Optimize animations with useCallback
+  const handleModeChange = useCallback((mode: 'bedtime' | 'wakeup') => {
+    setCalculatorMode(mode);
+    setShowResults(false);
+    setShowTooltip(false);
+  }, []);
+
+  const handlePeriodChange = useCallback((period: number) => {
+    setSelectedPeriod(period);
+    setShowResults(false);
+  }, []);
+
+  // Optimize results calculation
+  const calculateTimes = useCallback(() => {
+    const times: string[] = [];
+    const baseTime = new Date(selectedTime);
+    
+    if (calculatorMode === 'bedtime') {
+      // Calculate wake-up times
+      for (let i = 1; i <= 6; i++) {
+        const wakeTime = new Date(baseTime);
+        wakeTime.setHours(wakeTime.getHours() - (i * 1.5));
+        times.push(wakeTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      }
+    } else {
+      // Calculate bedtimes
+      for (let i = 1; i <= 6; i++) {
+        const bedTime = new Date(baseTime);
+        bedTime.setHours(bedTime.getHours() + (i * 1.5));
+        times.push(bedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      }
+    }
+    
+    setCalculatedTimes(times);
+    fadeAnim.value = withTiming(1, { duration: 300 });
+  }, [selectedTime, calculatorMode]);
+
+  // Optimize time selection
+  const handleTimeChange = useCallback((event: any, selectedDate?: Date) => {
+    if (selectedDate) {
+      setSelectedTime(selectedDate);
+      setShowResults(false);
+    }
+    setShowTimePicker(false);
+  }, []);
 
   const calculateOptimalTimes = () => {
     const now = new Date();
@@ -237,7 +303,7 @@ export default function SleepCycleCalculator() {
     setCalculatedTimes([]);
     setSelectedHour(10);
     setSelectedMinute(30);
-    setSelectedPeriod('PM');
+    setSelectedPeriod(6);
   };
 
   const formatTime = (date: Date): string => {
@@ -315,13 +381,13 @@ export default function SleepCycleCalculator() {
             <EnhancedTouchableOpacity
               style={[
                 styles.periodOption,
-                selectedPeriod === 'AM' && styles.periodOptionSelected
+                selectedPeriod === 6 && styles.periodOptionSelected
               ]}
-              onPress={() => setSelectedPeriod('AM')}
+              onPress={() => setSelectedPeriod(6)}
             >
               <Text style={[
                 styles.periodOptionText,
-                selectedPeriod === 'AM' && styles.periodOptionTextSelected
+                selectedPeriod === 6 && styles.periodOptionTextSelected
               ]}>
                 AM
               </Text>
@@ -330,13 +396,13 @@ export default function SleepCycleCalculator() {
             <EnhancedTouchableOpacity
               style={[
                 styles.periodOption,
-                selectedPeriod === 'PM' && styles.periodOptionSelected
+                selectedPeriod === 12 && styles.periodOptionSelected
               ]}
-              onPress={() => setSelectedPeriod('PM')}
+              onPress={() => setSelectedPeriod(12)}
             >
               <Text style={[
                 styles.periodOptionText,
-                selectedPeriod === 'PM' && styles.periodOptionTextSelected
+                selectedPeriod === 12 && styles.periodOptionTextSelected
               ]}>
                 PM
               </Text>
@@ -382,41 +448,88 @@ export default function SleepCycleCalculator() {
         <Animated.View style={[styles.content, fadeStyle]}>
           <Text style={styles.title}>Sleep Cycle Calculator</Text>
           
-          {/* Mode Selector */}
-          <View style={styles.modeSelector}>
-            <EnhancedTouchableOpacity
+          {/* Mode Selection */}
+          <Animated.View 
+            style={[styles.modeContainer, fadeStyle]}
+            entering={FadeIn.duration(300)}
+          >
+            <TouchableOpacity
               style={[
                 styles.modeButton,
-                calculatorMode === 'bedtime' && styles.modeButtonActive
+                calculatorMode === 'bedtime' && styles.modeButtonSelected
               ]}
-              onPress={() => setCalculatorMode('bedtime')}
+              onPress={() => handleModeChange('bedtime')}
             >
-              <Moon size={24} color={calculatorMode === 'bedtime' ? '#fff' : '#888'} />
+              <Moon size={24} color={calculatorMode === 'bedtime' ? '#fff' : '#666'} />
               <Text style={[
-                styles.modeButtonText,
-                calculatorMode === 'bedtime' && styles.modeButtonTextActive
-              ]}>Bedtime</Text>
-            </EnhancedTouchableOpacity>
-
-            <EnhancedTouchableOpacity
+                styles.modeText,
+                calculatorMode === 'bedtime' && styles.modeTextSelected
+              ]}>
+                Bedtime
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[
                 styles.modeButton,
-                calculatorMode === 'wakeup' && styles.modeButtonActive
+                calculatorMode === 'wakeup' && styles.modeButtonSelected
               ]}
-              onPress={() => setCalculatorMode('wakeup')}
+              onPress={() => handleModeChange('wakeup')}
             >
-              <Sun size={24} color={calculatorMode === 'wakeup' ? '#fff' : '#888'} />
+              <Sun size={24} color={calculatorMode === 'wakeup' ? '#fff' : '#666'} />
               <Text style={[
-                styles.modeButtonText,
-                calculatorMode === 'wakeup' && styles.modeButtonTextActive
-              ]}>Wake Up</Text>
-            </EnhancedTouchableOpacity>
-          </View>
+                styles.modeText,
+                calculatorMode === 'wakeup' && styles.modeTextSelected
+              ]}>
+                Wake Up
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
 
-          {/* Time Picker with Enhanced UI */}
-          <BlurView intensity={20} style={styles.timePickerBlur}>
-            {renderTimePicker()}
-          </BlurView>
+          {/* Time Selection */}
+          <Animated.View 
+            style={[styles.timeContainer, fadeStyle]}
+            entering={FadeIn.duration(300).delay(100)}
+          >
+            <Text style={styles.timeLabel}>
+              {calculatorMode === 'bedtime' ? 'When do you want to wake up?' : 'When do you want to go to bed?'}
+            </Text>
+            <TouchableOpacity
+              style={styles.timeButton}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Clock size={24} color="#fff" />
+              <Text style={styles.timeText}>
+                {selectedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Period Selection */}
+          <Animated.View 
+            style={[styles.periodContainer, fadeStyle]}
+            entering={FadeIn.duration(300).delay(200)}
+          >
+            <Text style={styles.periodLabel}>How many sleep cycles do you want?</Text>
+            <View style={styles.periodOptions}>
+              {[4, 5, 6].map((period) => (
+                <TouchableOpacity
+                  key={period}
+                  style={[
+                    styles.periodOption,
+                    selectedPeriod === period && styles.periodOptionSelected
+                  ]}
+                  onPress={() => handlePeriodChange(period)}
+                >
+                  <Text style={[
+                    styles.periodOptionText,
+                    selectedPeriod === period && styles.periodOptionTextSelected
+                  ]}>
+                    {period}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
@@ -427,7 +540,7 @@ export default function SleepCycleCalculator() {
                   withTiming(1, { duration: 100 }),
                   withTiming(0, { duration: 100 })
                 );
-                calculateOptimalTimes();
+                calculateTimes();
                 saveLastUsedTime();
               }}
             >
@@ -454,16 +567,22 @@ export default function SleepCycleCalculator() {
           {showResults && (
             <Animated.View 
               style={[styles.resultsContainer, fadeStyle]}
-              entering={FadeIn}
+              entering={SlideInRight.duration(400)}
+              exiting={SlideOutLeft.duration(300)}
+              layout={Layout.springify()}
             >
               <Text style={styles.resultsTitle}>
                 {calculatorMode === 'bedtime' ? 'Wake Up Times' : 'Bedtime Options'}
               </Text>
               {calculatedTimes.map((time, index) => (
-                <View key={index} style={styles.resultItem}>
+                <Animated.View 
+                  key={index} 
+                  style={styles.resultItem}
+                  entering={FadeIn.duration(300).delay(index * 100)}
+                >
                   <Clock size={20} color="#fff" />
                   <Text style={styles.resultText}>{time}</Text>
-                </View>
+                </Animated.View>
               ))}
             </Animated.View>
           )}
@@ -479,12 +598,25 @@ export default function SleepCycleCalculator() {
           {showTooltip && (
             <Animated.View 
               style={[styles.tooltip, fadeStyle]}
-              entering={FadeIn}
+              entering={FadeIn.duration(300)}
+              exiting={FadeOut.duration(200)}
+              layout={Layout.springify()}
             >
               <Text style={styles.tooltipText}>
                 Sleep cycles typically last 90 minutes. Waking up between cycles helps you feel more rested.
               </Text>
             </Animated.View>
+          )}
+
+          {/* Time Picker */}
+          {showTimePicker && (
+            <DateTimePicker
+              value={selectedTime}
+              mode="time"
+              is24Hour={false}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleTimeChange}
+            />
           )}
         </Animated.View>
       </ScrollView>
@@ -515,7 +647,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
   },
-  modeSelector: {
+  modeContainer: {
     flexDirection: 'row',
     marginBottom: 30,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -529,59 +661,71 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 5,
   },
-  modeButtonActive: {
+  modeButtonSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
-  modeButtonText: {
+  modeText: {
     color: '#888',
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
   },
-  modeButtonTextActive: {
+  modeTextSelected: {
     color: '#fff',
   },
-  timePickerBlur: {
-    borderRadius: 20,
-    overflow: 'hidden',
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 30,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  timePickerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  timeColumn: {
-    alignItems: 'center',
-    marginHorizontal: 10,
+    borderRadius: 15,
+    padding: 10,
   },
   timeLabel: {
     color: '#fff',
     fontSize: 16,
-    marginBottom: 10,
+    marginRight: 10,
   },
-  timeScroll: {
-    height: 150,
-  },
-  timeScrollContent: {
+  timeButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  timeOption: {
     padding: 10,
     borderRadius: 10,
-    marginVertical: 5,
+  },
+  timeText: {
+    color: '#fff',
+    fontSize: 18,
+    marginLeft: 10,
+  },
+  periodContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  periodLabel: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  periodOptions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  periodOption: {
+    padding: 10,
+    borderRadius: 10,
     minWidth: 60,
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  timeOptionSelected: {
+  periodOptionSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
-  timeOptionText: {
+  periodOptionText: {
     color: '#888',
-    fontSize: 18,
+    fontSize: 16,
   },
-  timeOptionTextSelected: {
+  periodOptionTextSelected: {
     color: '#fff',
     fontWeight: 'bold',
   },
@@ -683,32 +827,42 @@ const styles = StyleSheet.create({
     right: 20,
     opacity: 0.3,
   },
-  timePicker: {
+  timePickerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     padding: 20,
   },
-  periodContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
+  timeColumn: {
+    alignItems: 'center',
+    marginHorizontal: 10,
   },
-  periodOption: {
+  timeScroll: {
+    height: 150,
+  },
+  timeScrollContent: {
+    alignItems: 'center',
+  },
+  timeOption: {
     padding: 10,
     borderRadius: 10,
+    marginVertical: 5,
     minWidth: 60,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  periodOptionSelected: {
+  timeOptionSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
-  periodOptionText: {
+  timeOptionText: {
     color: '#888',
-    fontSize: 16,
+    fontSize: 18,
   },
-  periodOptionTextSelected: {
+  timeOptionTextSelected: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  timePicker: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    padding: 20,
   },
 });
