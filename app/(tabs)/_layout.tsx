@@ -13,12 +13,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(26, 26, 46, 0.95)',
-          borderTopWidth: 0,
-          elevation: 0,
-          height: 85,
-          paddingBottom: 25,
-          paddingTop: 10,
+          backgroundColor: colors.background,
         },
         tabBarBackground: Platform.OS === 'ios' ? () => (
           <BlurView
@@ -27,7 +22,7 @@ export default function TabLayout() {
             tint="dark"
           />
         ) : undefined,
-        tabBarActiveTintColor: colors.primary.main,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.text.secondary,
         tabBarLabelStyle: {
           fontFamily: 'Inter-Medium',
