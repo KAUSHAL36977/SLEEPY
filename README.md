@@ -1,29 +1,35 @@
-# Sleepy - Your Personal Sleep Tracking App
+# Sleepy - Your Personal Sleep Assistant
 
-Sleepy is a modern, user-friendly mobile application built with React Native and Expo that helps users track and improve their sleep patterns. The app provides features for monitoring sleep duration, quality, and habits to promote better sleep health.
+Sleepy is a comprehensive sleep tracking and improvement application built with React Native and Expo. It helps users monitor their sleep patterns, track sleep habits, and receive personalized recommendations for better sleep quality.
 
-## Features
+## 🌟 Features
 
-- **Sleep Tracking**: Monitor your sleep duration and quality
-- **Sleep Journal**: Record your sleep experiences and patterns
-- **Progress Analytics**: View detailed sleep statistics and trends
-- **Sleep Goals**: Set and track personalized sleep goals
-- **User Profile**: Manage your sleep preferences and settings
+### Sleep Tracking
+- Real-time sleep phase detection
+- Snore detection and analysis
+- Heart rate monitoring during sleep
+- Sleep quality scoring
+- Detailed sleep statistics and visualizations
 
-## Tech Stack
+### Sleep Habits Analysis
+- Sleep schedule consistency tracking
+- Bedtime routine monitoring
+- Screen time tracking
+- Physical activity correlation
+- Stimulant intake tracking
+- Sleep environment analysis
+- Personalized recommendations
 
-- React Native
-- Expo
-- TypeScript
-- React Navigation
-- Expo Router
-- React Native Chart Kit
-- AsyncStorage for local data persistence
+### User Interface
+- Beautiful, modern design
+- Dark/Light theme support
+- Responsive layout
+- Intuitive navigation
+- Interactive visualizations
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-
 - Node.js (v14 or higher)
 - npm or yarn
 - Expo CLI
@@ -44,7 +50,7 @@ npm install
 
 3. Start the development server:
 ```bash
-npm run dev
+npx expo start
 ```
 
 4. Run on your preferred platform:
@@ -52,21 +58,67 @@ npm run dev
 - Press `a` for Android emulator
 - Scan QR code with Expo Go app for physical device
 
-## Project Structure
+## 📱 App Structure
 
 ```
-sleepy/
-├── app/                 # Main application screens
-│   ├── (tabs)/         # Tab-based navigation screens
-│   └── _layout.tsx     # Root layout configuration
-├── components/         # Reusable UI components
-├── hooks/             # Custom React hooks
-├── types/             # TypeScript type definitions
-├── utils/             # Utility functions
-└── assets/            # Static assets (images, fonts)
+app/
+├── (tabs)/                 # Tab-based navigation
+│   ├── _layout.tsx        # Tab navigation configuration
+│   ├── index.tsx          # Home screen
+│   ├── sleep-tracking.tsx # Sleep tracking screen
+│   └── profile.tsx        # User profile screen
+├── components/            # Reusable components
+│   ├── styled/           # Styled components
+│   ├── SleepTracking.tsx # Sleep tracking component
+│   └── SleepVisualization.tsx # Sleep data visualization
+├── constants/            # App constants
+│   └── theme.ts         # Theme configuration
+├── context/             # React Context
+│   └── ThemeContext.tsx # Theme management
+├── services/            # Business logic
+│   ├── SleepTrackingService.ts  # Sleep tracking logic
+│   └── SleepHabitsService.ts    # Sleep habits analysis
+└── utils/              # Utility functions
+    └── permissions.ts  # Permission handling
 ```
 
-## Contributing
+## 🎨 Design System
+
+The app uses a comprehensive design system with:
+- Consistent color palette
+- Typography system
+- Spacing and layout rules
+- Component variants
+- Animation presets
+- Accessibility guidelines
+
+## 🔧 Technical Stack
+
+- React Native
+- Expo
+- TypeScript
+- React Navigation
+- Victory Native (Charts)
+- React Native Sensors
+- AsyncStorage
+- React Native Voice
+
+## 📊 Data Management
+
+- Local storage for user preferences
+- Real-time sensor data processing
+- Sleep data analysis and scoring
+- Habit tracking and recommendations
+
+## 🔐 Permissions
+
+The app requires the following permissions:
+- Motion sensors
+- Microphone (for snore detection)
+- Notifications
+- Background processing
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -74,12 +126,16 @@ sleepy/
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## License
+## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## 👥 Authors
 
-- Built with [Expo](https://expo.dev/)
-- Icons from [Lucide](https://lucide.dev/)
-- Charts powered by [React Native Chart Kit](https://github.com/indiespirit/react-native-chart-kit) 
+- Kaushal - Initial work - [KAUSHAL36977](https://github.com/KAUSHAL36977)
+
+## 🙏 Acknowledgments
+
+- React Native community
+- Expo team
+- All contributors and supporters 
