@@ -39,6 +39,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HealthIntegration } from '../components/HealthIntegration';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -448,6 +449,9 @@ export default function SleepCycleCalculator() {
         <Animated.View style={[styles.content, fadeStyle]}>
           <Text style={styles.title}>Sleep Cycle Calculator</Text>
           
+          {/* Health Integration */}
+          <HealthIntegration />
+
           {/* Mode Selection */}
           <Animated.View 
             style={[styles.modeContainer, fadeStyle]}
