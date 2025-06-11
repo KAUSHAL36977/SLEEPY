@@ -99,6 +99,16 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      <Tabs.Screen
+        name="analysis"
+        options={{
+          title: 'Analysis',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="analytics" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
