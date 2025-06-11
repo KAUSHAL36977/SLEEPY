@@ -3,81 +3,54 @@ import { Dimensions } from 'react-native';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export const COLORS = {
-  // Primary colors
-  primary: {
-    light: '#6B8AFE',
-    main: '#4A6CF7',
-    dark: '#2A4CDB',
-  },
-  // Secondary colors
-  secondary: {
-    light: '#B4A5FD',
-    main: '#8A6CF7',
-    dark: '#6A4CDB',
-  },
-  // Background colors
-  background: {
-    light: '#FFFFFF',
-    dark: '#121212',
-    card: {
-      light: 'rgba(255, 255, 255, 0.9)',
-      dark: 'rgba(30, 30, 30, 0.9)',
-    },
-  },
-  // Text colors
+  primary: '#6200EE',
+  secondary: '#03DAC6',
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  error: '#B00020',
   text: {
-    primary: {
-      light: '#1A1A1A',
-      dark: '#FFFFFF',
-    },
-    secondary: {
-      light: '#666666',
-      dark: '#B3B3B3',
-    },
-    disabled: {
-      light: '#999999',
-      dark: '#666666',
-    },
+    primary: '#000000',
+    secondary: '#666666',
+    disabled: '#999999',
+    hint: '#666666',
   },
-  // Status colors
   status: {
     success: '#4CAF50',
     warning: '#FFC107',
     error: '#F44336',
     info: '#2196F3',
   },
-  // Sleep-specific colors
   sleep: {
-    deep: '#2C3E50',
-    light: '#3498DB',
-    rem: '#9B59B6',
-    awake: '#E74C3C',
+    deep: '#1A237E',
+    light: '#3949AB',
+    rem: '#5C6BC0',
+    awake: '#9FA8DA',
   },
 };
 
 export const TYPOGRAPHY = {
-  fontFamily: {
-    regular: 'System',
-    medium: 'System',
-    bold: 'System',
+  h1: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    lineHeight: 40,
   },
-  fontSize: {
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
-    xxl: 24,
-    xxxl: 32,
+  h2: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    lineHeight: 32,
   },
-  lineHeight: {
-    xs: 16,
-    sm: 20,
-    md: 24,
-    lg: 28,
-    xl: 32,
-    xxl: 36,
-    xxxl: 40,
+  h3: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    lineHeight: 28,
+  },
+  body: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  caption: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 };
 
@@ -88,82 +61,46 @@ export const SPACING = {
   lg: 24,
   xl: 32,
   xxl: 48,
-  xxxl: 64,
 };
 
 export const BORDER_RADIUS = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 16,
   round: 9999,
 };
 
 export const SHADOWS = {
-  light: {
-    small: {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 2,
+  small: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
-    medium: {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-      elevation: 4,
-    },
-    large: {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 8,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
-      elevation: 8,
-    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 2,
   },
-  dark: {
-    small: {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.3,
-      shadowRadius: 3,
-      elevation: 2,
+  medium: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
     },
-    medium: {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: 0.4,
-      shadowRadius: 6,
-      elevation: 4,
+    shadowOpacity: 0.30,
+    shadowRadius: 4.65,
+    elevation: 4,
+  },
+  large: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 6,
     },
-    large: {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 8,
-      },
-      shadowOpacity: 0.5,
-      shadowRadius: 12,
-      elevation: 8,
-    },
+    shadowOpacity: 0.37,
+    shadowRadius: 7.49,
+    elevation: 6,
   },
 };
 
@@ -181,9 +118,9 @@ export const ANIMATION = {
 };
 
 export const LAYOUT = {
-  screenWidth: SCREEN_WIDTH,
-  screenHeight: SCREEN_HEIGHT,
-  isSmallDevice: SCREEN_WIDTH < 375,
+  maxWidth: 1200,
+  containerPadding: 16,
+  cardPadding: 16,
 };
 
 export const ACCESSIBILITY = {
@@ -196,19 +133,19 @@ export const ACCESSIBILITY = {
 export const lightTheme = {
   colors: {
     ...COLORS,
-    background: COLORS.background.light,
-    text: COLORS.text.primary.light,
-    textSecondary: COLORS.text.secondary.light,
+    background: COLORS.background,
+    text: COLORS.text.primary,
+    textSecondary: COLORS.text.secondary,
   },
-  shadows: SHADOWS.light,
+  shadows: SHADOWS.small,
 };
 
 export const darkTheme = {
   colors: {
     ...COLORS,
-    background: COLORS.background.dark,
-    text: COLORS.text.primary.dark,
-    textSecondary: COLORS.text.secondary.dark,
+    background: COLORS.background,
+    text: COLORS.text.primary,
+    textSecondary: COLORS.text.secondary,
   },
-  shadows: SHADOWS.dark,
+  shadows: SHADOWS.medium,
 }; 

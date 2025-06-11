@@ -5,11 +5,34 @@ import { SleepAnalysisService } from '../services/SleepAnalysisService';
 import { Card, StyledText } from './styled';
 import { VictoryPie, VictoryLabel } from 'victory-native';
 
+interface SleepPattern {
+  averageSleepDuration: number;
+  sleepEfficiency: number;
+  consistencyScore: number;
+  qualityScore: number;
+  disturbances: number;
+  recoveryScore: number;
+}
+
+interface Correlation {
+  factor: string;
+  impact: number;
+  confidence: number;
+}
+
+interface PersonalizedRecommendation {
+  title: string;
+  description: string;
+  priority: number;
+  impact: number;
+  evidence: string[];
+}
+
 export const SleepAnalysisComponent: React.FC = () => {
   const { colors } = useTheme();
-  const [patterns, setPatterns] = useState<any>(null);
-  const [correlations, setCorrelations] = useState<any[]>([]);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [patterns, setPatterns] = useState<SleepPattern | null>(null);
+  const [correlations, setCorrelations] = useState<Correlation[]>([]);
+  const [recommendations, setRecommendations] = useState<PersonalizedRecommendation[]>([]);
   const analysisService = SleepAnalysisService.getInstance();
 
   useEffect(() => {
@@ -143,7 +166,7 @@ export const SleepAnalysisComponent: React.FC = () => {
             <StyledText variant="h3">{recommendation.title}</StyledText>
             <StyledText>{recommendation.description}</StyledText>
             <View style={styles.evidenceContainer}>
-              {recommendation.evidence.map((evidence: string, idx: number) => (
+              {recommendation.evidence.map((evidence, idx) => (
                 <View key={idx} style={styles.evidenceItem}>
                   <StyledText>• {evidence}</StyledText>
                 </View>
