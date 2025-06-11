@@ -2,8 +2,12 @@ import { Tabs } from 'expo-router';
 import { Chrome as Home, Moon, BookOpen, TrendingUp, Settings } from 'lucide-react-native';
 import { BlurView } from 'expo-blur';
 import { StyleSheet, Platform } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
@@ -23,13 +27,17 @@ export default function TabLayout() {
             tint="dark"
           />
         ) : undefined,
-        tabBarActiveTintColor: '#a78bfa',
-        tabBarInactiveTintColor: '#6b7280',
+        tabBarActiveTintColor: colors.primary.main,
+        tabBarInactiveTintColor: colors.text.secondary,
         tabBarLabelStyle: {
           fontFamily: 'Inter-Medium',
           fontSize: 12,
           marginTop: 4,
         },
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.text.primary,
       }}>
       
       <Tabs.Screen
@@ -37,17 +45,17 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <Home color={color} size={size} strokeWidth={2} />
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
       
       <Tabs.Screen
-        name="sleep"
+        name="sleep-tracking"
         options={{
-          title: 'Sleep',
+          title: 'Sleep Tracking',
           tabBarIcon: ({ color, size }) => (
-            <Moon color={color} size={size} strokeWidth={2} />
+            <Ionicons name="moon" size={size} color={color} />
           ),
         }}
       />
