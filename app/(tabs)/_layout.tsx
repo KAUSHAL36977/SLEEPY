@@ -53,9 +53,19 @@ export default function TabLayout() {
       <Tabs.Screen
         name="sleep-tracking"
         options={{
-          title: 'Sleep Tracking',
+          title: 'Sleep',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="moon" size={size} color={color} />
+          ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="habits"
+        options={{
+          title: 'Habits',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
