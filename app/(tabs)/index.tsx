@@ -6,7 +6,8 @@ import {
   ScrollView, 
   TouchableOpacity, 
   Dimensions,
-  Platform
+  Platform,
+  Pressable
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
@@ -16,7 +17,8 @@ import {
   Sparkles,
   RotateCcw,
   Calculator,
-  Info
+  Info,
+  Star
 } from 'lucide-react-native';
 import Animated, { 
   useSharedValue, 
@@ -24,35 +26,42 @@ import Animated, {
   withSpring,
   withRepeat,
   withTiming,
-  interpolate
+  interpolate,
+  withSequence,
+  Easing,
+  FadeIn
 } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BlurView } from 'expo-blur';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Web-compatible TouchableOpacity wrapper
-const WebCompatibleTouchableOpacity = ({ children, style, onPress, ...props }: any) => {
-  if (Platform.OS === 'web') {
-    const { 
-      onResponderTerminate, 
-      onResponderTerminationRequest, 
-      ...webSafeProps 
-    } = props;
-    
-    return (
-      <TouchableOpacity 
-        style={style} 
-        onPress={onPress} 
-        {...webSafeProps}
-      >
-        {children}
-      </TouchableOpacity>
-    );
-  }
+// Enhanced TouchableOpacity with ripple effect
+const EnhancedTouchableOpacity = ({ children, style, onPress, ...props }: any) => {
+  const scale = useSharedValue(1);
   
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }]
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.95);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1);
+  };
+
   return (
-    <TouchableOpacity style={style} onPress={onPress} {...props}>
-      {children}
-    </TouchableOpacity>
+    <Pressable
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={onPress}
+    >
+      <Animated.View style={[style, animatedStyle]}>
+        {children}
+      </Animated.View>
+    </Pressable>
   );
 };
 
@@ -65,31 +74,68 @@ export default function SleepCycleCalculator() {
   const [selectedPeriod, setSelectedPeriod] = useState<'PM' | 'AM'>('PM');
   const [calculatedTimes, setCalculatedTimes] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
-  // Animations
+  // Enhanced animations
   const sparkleAnim = useSharedValue(0);
   const moonAnim = useSharedValue(0);
   const fadeAnim = useSharedValue(0);
+  const starsAnim = useSharedValue(0);
+  const buttonPressAnim = useSharedValue(0);
 
   useEffect(() => {
-    // Gentle sparkle animation
+    // Load last used time
+    loadLastUsedTime();
+    
+    // Enhanced animations
     sparkleAnim.value = withRepeat(
       withTiming(1, { duration: 3000 }),
       -1,
       true
     );
 
-    // Floating moon animation
     moonAnim.value = withRepeat(
       withTiming(1, { duration: 4000 }),
       -1,
       true
     );
 
-    // Fade in animation
+    starsAnim.value = withRepeat(
+      withTiming(1, { duration: 5000 }),
+      -1,
+      true
+    );
+
     fadeAnim.value = withSpring(1, { duration: 1000 });
   }, []);
 
+  const loadLastUsedTime = async () => {
+    try {
+      const savedTime = await AsyncStorage.getItem('lastUsedTime');
+      if (savedTime) {
+        const { hour, minute, period } = JSON.parse(savedTime);
+        setSelectedHour(hour);
+        setSelectedMinute(minute);
+        setSelectedPeriod(period);
+      }
+    } catch (error) {
+      console.error('Error loading last used time:', error);
+    }
+  };
+
+  const saveLastUsedTime = async () => {
+    try {
+      await AsyncStorage.setItem('lastUsedTime', JSON.stringify({
+        hour: selectedHour,
+        minute: selectedMinute,
+        period: selectedPeriod
+      }));
+    } catch (error) {
+      console.error('Error saving last used time:', error);
+    }
+  };
+
+  // Enhanced animation styles
   const sparkleStyle = useAnimatedStyle(() => ({
     opacity: interpolate(sparkleAnim.value, [0, 1], [0.3, 1]),
     transform: [{ scale: interpolate(sparkleAnim.value, [0, 1], [0.8, 1.2]) }],
@@ -100,6 +146,18 @@ export default function SleepCycleCalculator() {
       { translateY: interpolate(moonAnim.value, [0, 1], [-5, 5]) },
       { rotate: `${interpolate(moonAnim.value, [0, 1], [-2, 2])}deg` }
     ],
+  }));
+
+  const starsStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(starsAnim.value, [0, 1], [0.2, 0.8]),
+    transform: [
+      { translateY: interpolate(starsAnim.value, [0, 1], [-2, 2]) },
+      { scale: interpolate(starsAnim.value, [0, 1], [0.9, 1.1]) }
+    ],
+  }));
+
+  const buttonPressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(buttonPressAnim.value, [0, 1], [1, 0.95]) }],
   }));
 
   const fadeStyle = useAnimatedStyle(() => ({
@@ -203,7 +261,7 @@ export default function SleepCycleCalculator() {
             contentContainerStyle={styles.timeScrollContent}
           >
             {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
-              <WebCompatibleTouchableOpacity
+              <EnhancedTouchableOpacity
                 key={hour}
                 style={[
                   styles.timeOption,
@@ -217,7 +275,7 @@ export default function SleepCycleCalculator() {
                 ]}>
                   {hour}
                 </Text>
-              </WebCompatibleTouchableOpacity>
+              </EnhancedTouchableOpacity>
             ))}
           </ScrollView>
         </View>
@@ -231,7 +289,7 @@ export default function SleepCycleCalculator() {
             contentContainerStyle={styles.timeScrollContent}
           >
             {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
-              <WebCompatibleTouchableOpacity
+              <EnhancedTouchableOpacity
                 key={minute}
                 style={[
                   styles.timeOption,
@@ -245,7 +303,7 @@ export default function SleepCycleCalculator() {
                 ]}>
                   {minute.toString().padStart(2, '0')}
                 </Text>
-              </WebCompatibleTouchableOpacity>
+              </EnhancedTouchableOpacity>
             ))}
           </ScrollView>
         </View>
@@ -254,7 +312,7 @@ export default function SleepCycleCalculator() {
         <View style={styles.timeColumn}>
           <Text style={styles.timeLabel}>Period</Text>
           <View style={styles.periodContainer}>
-            <WebCompatibleTouchableOpacity
+            <EnhancedTouchableOpacity
               style={[
                 styles.periodOption,
                 selectedPeriod === 'AM' && styles.periodOptionSelected
@@ -267,9 +325,9 @@ export default function SleepCycleCalculator() {
               ]}>
                 AM
               </Text>
-            </WebCompatibleTouchableOpacity>
+            </EnhancedTouchableOpacity>
             
-            <WebCompatibleTouchableOpacity
+            <EnhancedTouchableOpacity
               style={[
                 styles.periodOption,
                 selectedPeriod === 'PM' && styles.periodOptionSelected
@@ -282,7 +340,7 @@ export default function SleepCycleCalculator() {
               ]}>
                 PM
               </Text>
-            </WebCompatibleTouchableOpacity>
+            </EnhancedTouchableOpacity>
           </View>
         </View>
       </View>
@@ -291,176 +349,144 @@ export default function SleepCycleCalculator() {
 
   return (
     <LinearGradient
-      colors={['#0a0a1a', '#1a1a2e', '#16213e', '#0f3460']}
+      colors={['#1a1a2e', '#16213e', '#0f3460']}
       style={styles.container}
     >
       {/* Animated Background Elements */}
-      <Animated.View style={[styles.backgroundMoon, moonStyle]}>
-        <Moon color="rgba(167, 139, 250, 0.1)" size={120} />
+      <Animated.View style={[styles.starsContainer, starsStyle]}>
+        {Array.from({ length: 20 }).map((_, i) => (
+          <Star
+            key={i}
+            size={Math.random() * 3 + 1}
+            color="#ffffff"
+            style={[
+              styles.star,
+              {
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              },
+            ]}
+          />
+        ))}
       </Animated.View>
-      
-      <Animated.View style={[styles.sparkle1, sparkleStyle]}>
-        <Sparkles color="rgba(251, 191, 36, 0.3)" size={16} />
-      </Animated.View>
-      
-      <Animated.View style={[styles.sparkle2, sparkleStyle]}>
-        <Sparkles color="rgba(167, 139, 250, 0.4)" size={12} />
+
+      <Animated.View style={[styles.moonContainer, moonStyle]}>
+        <Moon size={100} color="#f0f0f0" />
       </Animated.View>
 
       <ScrollView 
         style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <Animated.View style={[styles.header, fadeStyle]}>
-          <View style={styles.titleContainer}>
-            <Calculator color="#a78bfa" size={28} />
-            <Text style={styles.title}>Sleep Cycle Calculator</Text>
-          </View>
+        <Animated.View style={[styles.content, fadeStyle]}>
+          <Text style={styles.title}>Sleep Cycle Calculator</Text>
           
-          <Text style={styles.expertText}>
-            Expert Verified By: Chaunie Brusie, RN, BSN
-          </Text>
-          
-          <Text style={styles.description}>
-            It's important to wake up after a completed sleep cycle — rather than mid-cycle — to feel refreshed and improve your sleep quality. Simply choose your bedtime or wake-up time below and hit Calculate.
-          </Text>
-        </Animated.View>
-
-        {/* Mode Toggle */}
-        <Animated.View style={[styles.modeToggle, fadeStyle]}>
-          <WebCompatibleTouchableOpacity
-            style={[
-              styles.modeButton,
-              styles.modeButtonLeft,
-              calculatorMode === 'bedtime' && styles.modeButtonActive
-            ]}
-            onPress={() => setCalculatorMode('bedtime')}
-          >
-            <Moon 
-              color={calculatorMode === 'bedtime' ? '#1a1a2e' : '#9ca3af'} 
-              size={16} 
-            />
-            <Text style={[
-              styles.modeButtonText,
-              calculatorMode === 'bedtime' && styles.modeButtonTextActive
-            ]}>
-              I want to go to bed at...
-            </Text>
-          </WebCompatibleTouchableOpacity>
-          
-          <WebCompatibleTouchableOpacity
-            style={[
-              styles.modeButton,
-              styles.modeButtonRight,
-              calculatorMode === 'wakeup' && styles.modeButtonActive
-            ]}
-            onPress={() => setCalculatorMode('wakeup')}
-          >
-            <Sun 
-              color={calculatorMode === 'wakeup' ? '#1a1a2e' : '#9ca3af'} 
-              size={16} 
-            />
-            <Text style={[
-              styles.modeButtonText,
-              calculatorMode === 'wakeup' && styles.modeButtonTextActive
-            ]}>
-              I want to wake up at...
-            </Text>
-          </WebCompatibleTouchableOpacity>
-        </Animated.View>
-
-        {/* Time Picker */}
-        {!showResults && (
-          <Animated.View style={[styles.inputSection, fadeStyle]}>
-            {renderTimePicker()}
-          </Animated.View>
-        )}
-
-        {/* Action Buttons */}
-        <Animated.View style={[styles.actionButtons, fadeStyle]}>
-          {!showResults ? (
-            <>
-              <WebCompatibleTouchableOpacity 
-                style={styles.primaryButton}
-                onPress={calculateOptimalTimes}
-              >
-                <Calculator color="#1a1a2e" size={20} />
-                <Text style={styles.primaryButtonText}>CALCULATE</Text>
-              </WebCompatibleTouchableOpacity>
-              
-              <WebCompatibleTouchableOpacity 
-                style={styles.secondaryButton}
-                onPress={sleepNow}
-              >
-                <Clock color="#a78bfa" size={20} />
-                <Text style={styles.secondaryButtonText}>SLEEP NOW</Text>
-              </WebCompatibleTouchableOpacity>
-            </>
-          ) : (
-            <WebCompatibleTouchableOpacity 
-              style={styles.resetButton}
-              onPress={resetCalculator}
+          {/* Mode Selector */}
+          <View style={styles.modeSelector}>
+            <EnhancedTouchableOpacity
+              style={[
+                styles.modeButton,
+                calculatorMode === 'bedtime' && styles.modeButtonActive
+              ]}
+              onPress={() => setCalculatorMode('bedtime')}
             >
-              <RotateCcw color="#a78bfa" size={20} />
-              <Text style={styles.resetButtonText}>CHECK AGAIN</Text>
-            </WebCompatibleTouchableOpacity>
+              <Moon size={24} color={calculatorMode === 'bedtime' ? '#fff' : '#888'} />
+              <Text style={[
+                styles.modeButtonText,
+                calculatorMode === 'bedtime' && styles.modeButtonTextActive
+              ]}>Bedtime</Text>
+            </EnhancedTouchableOpacity>
+
+            <EnhancedTouchableOpacity
+              style={[
+                styles.modeButton,
+                calculatorMode === 'wakeup' && styles.modeButtonActive
+              ]}
+              onPress={() => setCalculatorMode('wakeup')}
+            >
+              <Sun size={24} color={calculatorMode === 'wakeup' ? '#fff' : '#888'} />
+              <Text style={[
+                styles.modeButtonText,
+                calculatorMode === 'wakeup' && styles.modeButtonTextActive
+              ]}>Wake Up</Text>
+            </EnhancedTouchableOpacity>
+          </View>
+
+          {/* Time Picker with Enhanced UI */}
+          <BlurView intensity={20} style={styles.timePickerBlur}>
+            {renderTimePicker()}
+          </BlurView>
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <EnhancedTouchableOpacity
+              style={styles.calculateButton}
+              onPress={() => {
+                buttonPressAnim.value = withSequence(
+                  withTiming(1, { duration: 100 }),
+                  withTiming(0, { duration: 100 })
+                );
+                calculateOptimalTimes();
+                saveLastUsedTime();
+              }}
+            >
+              <Calculator size={24} color="#fff" />
+              <Text style={styles.calculateButtonText}>Calculate</Text>
+            </EnhancedTouchableOpacity>
+
+            <EnhancedTouchableOpacity
+              style={styles.sleepNowButton}
+              onPress={() => {
+                buttonPressAnim.value = withSequence(
+                  withTiming(1, { duration: 100 }),
+                  withTiming(0, { duration: 100 })
+                );
+                sleepNow();
+              }}
+            >
+              <Moon size={24} color="#fff" />
+              <Text style={styles.sleepNowButtonText}>Sleep Now</Text>
+            </EnhancedTouchableOpacity>
+          </View>
+
+          {/* Results Section */}
+          {showResults && (
+            <Animated.View 
+              style={[styles.resultsContainer, fadeStyle]}
+              entering={FadeIn}
+            >
+              <Text style={styles.resultsTitle}>
+                {calculatorMode === 'bedtime' ? 'Wake Up Times' : 'Bedtime Options'}
+              </Text>
+              {calculatedTimes.map((time, index) => (
+                <View key={index} style={styles.resultItem}>
+                  <Clock size={20} color="#fff" />
+                  <Text style={styles.resultText}>{time}</Text>
+                </View>
+              ))}
+            </Animated.View>
+          )}
+
+          {/* Info Tooltip */}
+          <TouchableOpacity
+            style={styles.infoButton}
+            onPress={() => setShowTooltip(!showTooltip)}
+          >
+            <Info size={24} color="#fff" />
+          </TouchableOpacity>
+          
+          {showTooltip && (
+            <Animated.View 
+              style={[styles.tooltip, fadeStyle]}
+              entering={FadeIn}
+            >
+              <Text style={styles.tooltipText}>
+                Sleep cycles typically last 90 minutes. Waking up between cycles helps you feel more rested.
+              </Text>
+            </Animated.View>
           )}
         </Animated.View>
-
-        {/* Results Section */}
-        {showResults && (
-          <Animated.View style={[styles.resultsSection, fadeStyle]}>
-            <LinearGradient
-              colors={['rgba(167, 139, 250, 0.15)', 'rgba(139, 92, 246, 0.05)']}
-              style={styles.resultsCard}
-            >
-              <View style={styles.resultsHeader}>
-                <Sparkles color="#a78bfa" size={24} />
-                <Text style={styles.resultsTitle}>
-                  {calculatorMode === 'bedtime' 
-                    ? 'To wake up refreshed, you should aim to wake up at...'
-                    : 'To wake up refreshed, you should aim to sleep at...'
-                  }
-                </Text>
-              </View>
-              
-              <View style={styles.timeResults}>
-                {calculatedTimes.map((time, index) => (
-                  <View key={index} style={styles.timeResultItem}>
-                    <View style={styles.cycleInfo}>
-                      <Text style={styles.cycleNumber}>{index + 4}</Text>
-                      <Text style={styles.cycleLabel}>cycles</Text>
-                    </View>
-                    <Text style={styles.resultTime}>{time}</Text>
-                    <Text style={styles.resultDuration}>
-                      {((index + 4) * 1.5).toFixed(1)}h sleep
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              
-              <View style={styles.recommendationBadge}>
-                <Text style={styles.recommendationText}>
-                  💤 Most refreshing: {calculatedTimes[1] || calculatedTimes[0]}
-                </Text>
-              </View>
-            </LinearGradient>
-          </Animated.View>
-        )}
-
-        {/* Footer */}
-        <Animated.View style={[styles.footer, fadeStyle]}>
-          <View style={styles.footerContent}>
-            <Info color="#6b7280" size={16} />
-            <Text style={styles.footerText}>
-              Powered by Sleep Cycle Logic – Sleepopolis Certified
-            </Text>
-          </View>
-        </Animated.View>
-
-        <View style={styles.bottomSpacer} />
       </ScrollView>
     </LinearGradient>
   );
@@ -474,315 +500,215 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    flexGrow: 1,
+    padding: 20,
   },
-  backgroundMoon: {
-    position: 'absolute',
-    top: 80,
-    right: -20,
-    opacity: 0.1,
-    zIndex: 0,
-  },
-  sparkle1: {
-    position: 'absolute',
-    top: 150,
-    left: 30,
-    zIndex: 0,
-  },
-  sparkle2: {
-    position: 'absolute',
-    top: 200,
-    right: 80,
-    zIndex: 0,
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 32,
-    zIndex: 1,
-  },
-  titleContainer: {
-    flexDirection: 'row',
+  content: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 12,
+    paddingTop: 40,
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: '#ffffff',
-  },
-  expertText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: '#9ca3af',
-    marginBottom: 16,
-  },
-  description: {
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: '#d1d5db',
-    lineHeight: 24,
-  },
-  modeToggle: {
-    marginHorizontal: 24,
-    marginBottom: 32,
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 16,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  modeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  modeButtonLeft: {
-    marginRight: 2,
-  },
-  modeButtonRight: {
-    marginLeft: 2,
-  },
-  modeButtonActive: {
-    backgroundColor: '#a78bfa',
-  },
-  modeButtonText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: '#9ca3af',
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 30,
     textAlign: 'center',
   },
-  modeButtonTextActive: {
-    color: '#1a1a2e',
+  modeSelector: {
+    flexDirection: 'row',
+    marginBottom: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 15,
+    padding: 5,
   },
-  inputSection: {
-    marginHorizontal: 24,
-    marginBottom: 32,
+  modeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginHorizontal: 5,
+  },
+  modeButtonActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  modeButtonText: {
+    color: '#888',
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modeButtonTextActive: {
+    color: '#fff',
+  },
+  timePickerBlur: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   timePickerContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  timePicker: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 16,
+    justifyContent: 'center',
+    padding: 20,
   },
   timeColumn: {
-    flex: 1,
     alignItems: 'center',
+    marginHorizontal: 10,
   },
   timeLabel: {
+    color: '#fff',
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#ffffff',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   timeScroll: {
-    maxHeight: 120,
-    width: '100%',
+    height: 150,
   },
   timeScrollContent: {
     alignItems: 'center',
-    paddingVertical: 8,
   },
   timeOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginVertical: 2,
-    borderRadius: 12,
+    padding: 10,
+    borderRadius: 10,
+    marginVertical: 5,
     minWidth: 60,
     alignItems: 'center',
   },
   timeOptionSelected: {
-    backgroundColor: 'rgba(167, 139, 250, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   timeOptionText: {
+    color: '#888',
     fontSize: 18,
-    fontFamily: 'Inter-Medium',
-    color: '#d1d5db',
   },
   timeOptionTextSelected: {
-    color: '#a78bfa',
-    fontFamily: 'Inter-Bold',
-  },
-  periodContainer: {
-    gap: 8,
-  },
-  periodOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  periodOptionSelected: {
-    backgroundColor: 'rgba(167, 139, 250, 0.3)',
-  },
-  periodOptionText: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    color: '#d1d5db',
-  },
-  periodOptionTextSelected: {
-    color: '#a78bfa',
-    fontFamily: 'Inter-Bold',
+    color: '#fff',
+    fontWeight: 'bold',
   },
   actionButtons: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-    gap: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 30,
   },
-  primaryButton: {
+  calculateButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#4a90e2',
+    padding: 15,
+    borderRadius: 15,
+    marginRight: 10,
+    minWidth: 150,
     justifyContent: 'center',
-    backgroundColor: '#a78bfa',
-    paddingVertical: 18,
-    borderRadius: 16,
-    gap: 12,
   },
-  primaryButtonText: {
+  calculateButtonText: {
+    color: '#fff',
     fontSize: 18,
-    fontFamily: 'Inter-Bold',
-    color: '#1a1a2e',
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
-  secondaryButton: {
+  sleepNowButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#9b59b6',
+    padding: 15,
+    borderRadius: 15,
+    minWidth: 150,
     justifyContent: 'center',
-    backgroundColor: 'rgba(167, 139, 250, 0.2)',
-    paddingVertical: 18,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(167, 139, 250, 0.4)',
-    gap: 12,
   },
-  secondaryButtonText: {
+  sleepNowButtonText: {
+    color: '#fff',
     fontSize: 18,
-    fontFamily: 'Inter-Bold',
-    color: '#a78bfa',
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
-  resetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(167, 139, 250, 0.15)',
-    paddingVertical: 18,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(167, 139, 250, 0.3)',
-    gap: 12,
-  },
-  resetButtonText: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
-    color: '#a78bfa',
-  },
-  resultsSection: {
-    marginHorizontal: 24,
-    marginBottom: 32,
-  },
-  resultsCard: {
+  resultsContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(167, 139, 250, 0.2)',
-  },
-  resultsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    gap: 12,
+    padding: 20,
+    width: '100%',
+    marginTop: 20,
   },
   resultsTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#ffffff',
-    lineHeight: 24,
-  },
-  timeResults: {
-    gap: 16,
-    marginBottom: 24,
-  },
-  timeResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  cycleInfo: {
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  cycleNumber: {
+    color: '#fff',
     fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: '#a78bfa',
-  },
-  cycleLabel: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#9ca3af',
-  },
-  resultTime: {
-    flex: 1,
-    fontSize: 24,
-    fontFamily: 'Inter-Bold',
-    color: '#ffffff',
+    fontWeight: 'bold',
+    marginBottom: 15,
     textAlign: 'center',
   },
-  resultDuration: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: '#9ca3af',
-  },
-  recommendationBadge: {
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.3)',
-  },
-  recommendationText: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#fbbf24',
-    textAlign: 'center',
-  },
-  footer: {
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  footerContent: {
+  resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  resultText: {
+    color: '#fff',
+    fontSize: 18,
+    marginLeft: 10,
+  },
+  infoButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 10,
+    borderRadius: 25,
+  },
+  tooltip: {
+    position: 'absolute',
+    bottom: 80,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    padding: 15,
+    borderRadius: 10,
+    maxWidth: 250,
+  },
+  tooltipText: {
+    color: '#fff',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  starsContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  star: {
+    position: 'absolute',
+  },
+  moonContainer: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    opacity: 0.3,
+  },
+  timePicker: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
+    padding: 20,
   },
-  footerText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#6b7280',
-    textAlign: 'center',
+  periodContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
   },
-  bottomSpacer: {
-    height: 40,
+  periodOption: {
+    padding: 10,
+    borderRadius: 10,
+    minWidth: 60,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  periodOptionSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  periodOptionText: {
+    color: '#888',
+    fontSize: 16,
+  },
+  periodOptionTextSelected: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
