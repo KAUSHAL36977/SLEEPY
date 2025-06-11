@@ -128,7 +128,10 @@ The app requires the following permissions:
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under a Commercial Software License Agreement. All rights reserved. The software is proprietary and confidential. Unauthorized copying, modification, distribution, or use of this software, via any medium, is strictly prohibited.
+
+For licensing inquiries, please contact:
+- Kaushal - [KAUSHAL36977](https://github.com/KAUSHAL36977)
 
 ## 👥 Authors
 
